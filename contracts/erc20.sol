@@ -30,11 +30,12 @@ contract MyToken is IERC20 {
     mapping(address => mapping(address => uint)) public _allowance;
 
     // token 名稱
-    string public name = "Yee Token";
+    string public name = "Wrapped Ether";
     // token 代號
-    string public symbol = "Yee";
+    string public symbol = "WETH";
     // token 數量級
-    uint8 public immutable decimals = 1;
+    uint8 public immutable decimals = 18;
+
     // token 總量
     function totalSupply() external view returns (uint) {
         return _totalSupply;
