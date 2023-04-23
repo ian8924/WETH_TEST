@@ -14,7 +14,7 @@ contract Weth9Test is Test {
     event Approval(address indexed owner, address indexed spender, uint amount);
     event Transfer(address indexed from, address indexed to, uint amount);
     event Deposit(address indexed to, uint amount);
-    event Withdrawal(address indexed src, uint wad);
+    event Withdrawal(address indexed to, uint amount);
 
     function setUp() public {
         weth9 = new WETH9();
@@ -59,10 +59,7 @@ contract Weth9Test is Test {
     }
 
     // 測項 4: withdraw 應該要 burn 掉與 input parameters 一樣的 erc20 token
-    function test_withdraw_burn(
-        uint256 depositAmount,
-        uint withdrawAmount
-    ) external {
+    function test_withdraw_burn(uint256 depositAmount,uint withdrawAmount) external {
         // 條件
         vm.assume(depositAmount <= 10 ether);
         vm.assume(withdrawAmount <= depositAmount);
@@ -78,9 +75,7 @@ contract Weth9Test is Test {
     }
  
     // 測項 5: withdraw 應該將 burn 掉的 erc20 換成 ether 轉給 user
-    function test_withdrawBurnEtherToUser(
-        uint withdrawAmount
-    ) external {
+    function test_withdrawBurnEtherToUser(uint withdrawAmount) external {
         vm.assume(withdrawAmount <= 10 ether);
 
         vm.startPrank(user1);
@@ -95,9 +90,7 @@ contract Weth9Test is Test {
     }
 
     // 測項 6: withdraw 應該要 emit Withdraw event
-    function test_withdrawShouldEmit(
-        uint withdrawAmount
-    ) external {
+    function test_withdrawShouldEmit(uint withdrawAmount) external {
         vm.assume(withdrawAmount <= 10 ether);
 
         vm.startPrank(user1);
@@ -111,11 +104,8 @@ contract Weth9Test is Test {
         vm.stopPrank();
     }
 
-
     // 測項 7: transfer 應該要將 erc20 token 轉給別人
-    function test_transferShouldToken(
-        uint transferAmount
-    ) external {
+    function test_transferShouldToken(uint transferAmount) external {
         vm.assume(transferAmount <= 10 ether);
 
         vm.startPrank(user1);
@@ -127,11 +117,8 @@ contract Weth9Test is Test {
         vm.stopPrank();
     }
 
-
     // 測項 8: approve 應該要給他人 allowance
-    function test_approveShouldGiveAllowance(
-        uint approveAmount
-    ) external {
+    function test_approveShouldGiveAllowance(uint approveAmount) external {
         vm.assume(approveAmount <= 10 ether);
 
         vm.startPrank(user1);
@@ -143,10 +130,7 @@ contract Weth9Test is Test {
     }
 
     //  測項 9: transferFrom 應該要可以使用他人的 allowance
-     function test_transferFromShouldUseAllowance(
-        uint allowanceAmount,
-        uint sendAmount
-    ) external {
+     function test_transferFromShouldUseAllowance(uint allowanceAmount,uint sendAmount) external {
         vm.assume(allowanceAmount <= 10 ether);
         vm.assume(allowanceAmount >= sendAmount);
 
@@ -164,10 +148,7 @@ contract Weth9Test is Test {
     }
 
     //  測項 10: transferFrom 後應該要減除用完的 allowance
-     function test_transferFromShouldUpdateAllowance(
-        uint allowanceAmount,
-        uint sendAmount
-    ) external {
+    function test_transferFromShouldUpdateAllowance(uint allowanceAmount,uint sendAmount) external {
         vm.assume(allowanceAmount <= 10 ether);
         vm.assume(allowanceAmount >= sendAmount);
 
@@ -184,4 +165,64 @@ contract Weth9Test is Test {
         vm.startPrank(user2);
         assertEq(weth9.allowance(user1, user2), allowanceAmount - sendAmount);
     }
+
+    //  測項 11: transfer 後應該要 emit transfer event
+    function test_transferShouldEmit(uint transferAmount) external {
+        vm.assume(transferAmount <= 10 ether);
+
+        vm.startPrank(user1);
+        weth9.deposit{value: 10 ether}();
+
+        vm.expectEmit(false, false, false, false);
+        emit Transfer(user1, user3, transferAmount);
+
+        weth9.transfer(user3, transferAmount);
+        vm.stopPrank();
+    }
+
+    //  測項 12: transferFrom 後應該要 emit transfer event
+    function test_transferFromShouldEmit(uint allowanceAmount,uint sendAmount) external {
+        vm.assume(allowanceAmount <= 10 ether);
+        vm.assume(allowanceAmount >= sendAmount);
+
+        // user1 approve  user2
+        vm.startPrank(user1);
+        weth9.deposit{value: 10 ether}();
+        weth9.approve(user2, allowanceAmount);        
+        vm.stopPrank();
+        // user2 傳 user1 token 給 user3
+        vm.startPrank(user2);
+        vm.expectEmit(false, false, false, false);
+        emit Transfer(user1, user3, sendAmount);
+
+        weth9.transferFrom(user1, user3, sendAmount);
+        vm.stopPrank();
+    }
+
+    // 測項 13: approve 後應該要 emit approve event
+    function test_approveShouldEmit(uint approveAmount) external {
+        vm.assume(approveAmount <= 10 ether);
+        vm.startPrank(user1);
+        weth9.deposit{value: 10 ether}();
+
+        vm.expectEmit(false,false,false,false);
+        emit Approval(user1, user2, approveAmount);
+        weth9.approve(user2, approveAmount);
+        
+        vm.stopPrank();
+    }
+
+    // 測項 14: transfer 後應該要扣除 erc20 token 
+    function test_transferTokenShouldBurn(uint transferAmount) external {
+        vm.assume(transferAmount <= 10 ether);
+
+        vm.startPrank(user1);
+        weth9.deposit{value: 10 ether}();
+        weth9.transfer(user2, transferAmount);
+
+        uint balanceOfUser1 = weth9.balanceOf(user1);
+        assertEq(10 ether - transferAmount, balanceOfUser1);
+        vm.stopPrank();
+    }
+
 }

@@ -40,6 +40,7 @@ contract MyToken is IERC20 {
     function totalSupply() external view returns (uint) {
         return _totalSupply;
     }
+
     // owner 地址授權給 spender 地址使用的 token 數量
     function allowance(
         address owner,
@@ -62,6 +63,7 @@ contract MyToken is IERC20 {
         emit Approval(msg.sender, spender, amount);
         return true;
     }
+    
     // 從 sender 地址傳 amount 數量的 token 到 recipient 地址
     function transferFrom(
         address sender,
